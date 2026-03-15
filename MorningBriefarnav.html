@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The InvView — Broadview Morning Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090f;--surf:#0d1219;--card:#111720;--card2:#161e2c;--brd:#1a2535;--brd2:#21304a;--gold:#c9a84c;--gold2:#e8c87a;--golddim:#7a5e1e;--txt:#dde3ed;--txt2:#7a8ea8;--txt3:#3f5572;--grn:#34d399;--red:#f87171;--blu:#60a5fa;--amb:#fbbf24;--ppl:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.65;min-height:100vh}
+
+/* API KEY SCREEN */
+#apiScreen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.api-box{background:var(--surf);border:1px solid var(--golddim);border-radius:16px;padding:40px;max-width:500px;width:100%;text-align:center}
+.api-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--txt);margin-bottom:4px}
+.api-sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt2);margin-bottom:30px}
+.api-label{font-size:12px;color:var(--txt2);text-align:left;margin-bottom:6px;display:block}
+.api-input{width:100%;background:var(--card);border:1px solid var(--brd2);color:var(--txt);padding:12px 16px;border-radius:8px;font-size:13px;font-family:'IBM Plex Mono',monospace;outline:none;margin-bottom:8px}
+.api-input:focus{border-color:var(--gold)}
+.api-hint{font-size:11px;color:var(--txt3);margin-bottom:24px;text-align:left;line-height:1.6}
+.api-hint a{color:var(--gold)}
+.api-btn{width:100%;background:var(--golddim);border:1px solid var(--gold);color:var(--gold2);padding:13px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .2s}
+.api-btn:hover{background:var(--gold);color:#000}
+.api-error{color:var(--red);font-size:12px;margin-top:10px;display:none}
+.api-remember{display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:12px;color:var(--txt2);cursor:pointer}
+.api-remember input{accent-color:var(--gold)}
+
+/* MASTHEAD */
+.mast{background:var(--surf);border-bottom:1px solid var(--golddim);position:sticky;top:0;z-index:100}
+.mast-inner{max-width:1380px;margin:0 auto;padding:14px 24px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.pub-tag{font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.brief-title{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:var(--txt);line-height:1}
+.brief-sub{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--txt2);margin-top:4px}
+.mast-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.dateline{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt3)}
+.mast-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:transparent;border:1px solid var(--brd2);color:var(--txt2);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08)}
+.btn-gold{border-color:var(--golddim);color:var(--gold)}
+.btn-gold:hover{background:rgba(201,168,76,.15)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:5px 10px;font-size:11px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--txt3);display:inline-block;transition:background .3s}
+.dot.live{background:var(--grn);animation:pulse 2s infinite}
+.dot.busy{background:var(--amb);animation:pulse .8s infinite}
+.dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* STATUS */
+.statusbar{background:var(--bg);border-bottom:1px solid var(--brd)}
+.statusbar-inner{max-width:1380px;margin:0 auto;padding:6px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px}
+.stag{color:var(--txt3);letter-spacing:.1em;text-transform:uppercase}
+.sval{color:var(--txt2);font-family:'IBM Plex Mono',monospace}
+.ssep{color:var(--brd2)}
+#genStatus{color:var(--gold);font-weight:500}
+.progress-wrap{height:2px;background:var(--brd)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--golddim),var(--gold));width:0;transition:width .5s ease}
+
+/* MAIN */
+.main{max-width:1380px;margin:0 auto;padding:24px 24px 80px}
+
+/* SECTIONS */
+.section{margin-bottom:24px;border:1px solid var(--brd);border-radius:12px;overflow:hidden;background:var(--card)}
+.sec-hd{padding:12px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;background:var(--surf)}
+.sec-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.1em;background:var(--brd);padding:3px 7px;border-radius:4px}
+.sec-ttl{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--txt)}
+.sec-badge{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.b-live{background:rgba(52,211,153,.1);color:var(--grn);border:1px solid rgba(52,211,153,.2)}
+.b-news{background:rgba(96,165,250,.08);color:var(--blu);border:1px solid rgba(96,165,250,.15)}
+.b-india{background:rgba(251,191,36,.08);color:var(--amb);border:1px solid rgba(251,191,36,.15)}
+.b-voice{background:rgba(167,139,250,.08);color:var(--ppl);border:1px solid rgba(167,139,250,.15)}
+.sec-body{padding:20px}
+
+/* SKELETON */
+.skel-wrap{padding:20px;display:flex;flex-direction:column;gap:10px}
+.sk{background:var(--brd);border-radius:4px;height:13px;animation:shimmer 1.8s ease-in-out infinite}
+@keyframes shimmer{0%,100%{opacity:.35}50%{opacity:.7}}
+.sk-s{width:35%}.sk-m{width:60%}.sk-l{width:82%}.sk-f{width:100%}
+.err-msg{color:var(--red);font-size:13px;padding:24px;text-align:center}
+
+/* MARKET */
+.mkt-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.mkt-group{margin-bottom:16px}
+.mkt-group:last-child{margin-bottom:0}
+.mkt-lbl{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--brd)}
+.mkt-tbl{width:100%;border-collapse:collapse}
+.mkt-tbl th{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);text-align:left;padding:4px 6px;border-bottom:1px solid var(--brd)}
+.mkt-tbl td{padding:6px 6px;border-bottom:1px solid rgba(26,37,53,.6);font-family:'IBM Plex Mono',monospace;font-size:12px}
+.mkt-tbl tr:last-child td{border-bottom:none}
+.mkt-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.an{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--txt);font-weight:500}
+.av{color:var(--txt);text-align:right}
+.pos{color:var(--grn);text-align:right;font-weight:500}
+.neg{color:var(--red);text-align:right;font-weight:500}
+.neu{color:var(--txt2);text-align:right}
+.flow-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.flow-card{flex:1;min-width:150px;background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:10px 13px}
+.flow-lbl{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
+.flow-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500}
+.vix-card{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.15);border-radius:8px;padding:10px 13px;min-width:130px}
+.vix-lbl{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--amb);margin-bottom:3px}
+.vix-val{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--amb)}
+
+/* NEWS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.col-lbl{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--brd)}
+.hl{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(26,37,53,.7)}
+.hl:last-child{border-bottom:none}
+.hl-n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt3);min-width:18px;padding-top:2px}
+.hl-t{font-size:13px;color:var(--txt);line-height:1.5;flex:1}
+
+/* INDIA */
+.sub-lbl{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--brd)}
+.deals-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.deal-card{background:var(--card2);border:1px solid var(--brd);border-radius:7px;padding:9px 11px}
+.dtype{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:12px;margin-bottom:5px}
+.d-ipo{background:rgba(96,165,250,.12);color:var(--blu)}
+.d-ma{background:rgba(167,139,250,.12);color:var(--ppl)}
+.d-qip{background:rgba(52,211,153,.12);color:var(--grn)}
+.d-block{background:rgba(251,191,36,.12);color:var(--amb)}
+.d-result{background:rgba(201,168,76,.12);color:var(--gold)}
+.d-other{background:rgba(255,255,255,.06);color:var(--txt2)}
+.deal-txt{font-size:12px;color:var(--txt);line-height:1.45}
+.ev-item{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(26,37,53,.7)}
+.ev-item:last-child{border-bottom:none}
+.ev-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0}
+.ev-txt{font-size:13px;color:var(--txt);line-height:1.5}
+.divider{border:none;border-top:1px solid var(--brd);margin:18px 0}
+
+/* OUTLETS */
+.outlets-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.outlet-card{background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:13px}
+.outlet-name{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--brd)}
+.outlet-hl{padding:6px 0;border-bottom:1px solid rgba(26,37,53,.6);font-size:11.5px;color:var(--txt);line-height:1.45}
+.outlet-hl:last-child{border-bottom:none;padding-bottom:0}
+
+/* TRENDS */
+.trend-row{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid rgba(26,37,53,.7)}
+.trend-row:last-child{border-bottom:none}
+.trend-tag{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;min-width:110px;color:var(--blu)}
+.trend-ctx{font-size:12px;color:var(--txt2);flex:1}
+.ideas-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:13px}
+.idea-card{background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:11px}
+.idea-plat{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ppl);margin-bottom:4px}
+.idea-ttl{font-size:12px;color:var(--txt);font-weight:500;line-height:1.4;margin-bottom:3px}
+.idea-angle{font-size:11px;color:var(--txt2);line-height:1.4}
+
+/* VOICES */
+.voices-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.voice-card{background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:15px}
+.voice-hd{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+.voice-av{width:36px;height:36px;border-radius:50%;background:var(--brd2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gold);flex-shrink:0}
+.v-name{font-size:13px;font-weight:600;color:var(--txt)}
+.v-role{font-size:11px;color:var(--txt2);line-height:1.4}
+.v-src{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-top:2px}
+.v-quote{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--txt);line-height:1.55;margin-bottom:7px;border-left:2px solid var(--golddim);padding-left:11px}
+.v-why{font-size:11px;color:var(--txt2);background:rgba(255,255,255,.03);border-radius:6px;padding:6px 9px}
+.why-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);display:block;margin-bottom:2px}
+
+/* FOOTER */
+.footer{background:var(--surf);border-top:1px solid var(--brd);padding:13px 24px}
+.footer-inner{max-width:1380px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.footer-note{font-size:11px;color:var(--txt3)}
+.change-key{font-size:11px;color:var(--txt3);cursor:pointer;text-decoration:underline}
+.change-key:hover{color:var(--gold)}
+
+@media(max-width:1000px){.outlets-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.mkt-cols,.two-col,.voices-grid,.ideas-grid,.deals-grid{grid-template-columns:1fr}.outlets-grid{grid-template-columns:1fr 1fr}.brief-title{font-size:22px}.mast-inner{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+
+<!-- ── API KEY SCREEN ── -->
+<div id="apiScreen">
+  <div class="api-box">
+    <div class="api-logo">Broadview Morning Brief</div>
+    <div class="api-sub">The InvView · India's Market Intelligence Engine</div>
+
+    <label class="api-label">Enter your free Gemini API key to get started</label>
+    <input class="api-input" type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+
+    <label class="api-remember">
+      <input type="checkbox" id="rememberKey" checked>
+      Remember key in this browser (saves locally, never sent anywhere)
+    </label>
+
+    <div class="api-hint">
+      Don't have a key? Get one free in 1 minute:<br>
+      1. Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a><br>
+      2. Sign in with Google → click <strong style="color:var(--txt)">"Get API Key"</strong> → <strong style="color:var(--txt)">"Create API Key"</strong><br>
+      3. Copy the key (starts with AIza...) and paste it above
+    </div>
+
+    <button class="api-btn" onclick="startWithKey()">Generate My Morning Brief →</button>
+    <div class="api-error" id="apiError">Invalid key — please check and try again</div>
+  </div>
+</div>
+
+<!-- ── MASTHEAD ── -->
+<header class="mast">
+  <div class="mast-inner">
+    <div>
+      <div class="pub-tag">The InvView</div>
+      <div class="brief-title">Broadview Morning Brief</div>
+      <div class="brief-sub">India's Smartest Market Intelligence Brief</div>
+    </div>
+    <div class="mast-right">
+      <div class="dateline" id="dateline"></div>
+      <div class="mast-btns">
+        <button class="btn" onclick="runBrief()"><span class="dot" id="liveDot"></span>Refresh Brief</button>
+        <button class="btn btn-gold" id="exportBtn" disabled onclick="exportWord()">↓ Export DOCX</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="statusbar">
+  <div class="statusbar-inner">
+    <span class="stag">Status</span><span class="sval" id="genStatus">Ready</span>
+    <span class="ssep">·</span>
+    <span class="stag">Last generated</span><span class="sval" id="lastGen">—</span>
+    <span class="ssep">·</span>
+    <span class="stag">Engine</span><span class="sval">Gemini + Google Search · 6 sections · Free</span>
+  </div>
+</div>
+<div class="progress-wrap"><div class="progress-fill" id="progress"></div></div>
+
+<!-- ── SECTIONS ── -->
+<main class="main">
+  <div class="section"><div class="sec-hd"><span class="sec-num">01</span><span class="sec-ttl">Market Snapshot</span><span class="sec-badge b-live">Live Prices</span></div><div id="s01"></div></div>
+  <div class="section"><div class="sec-hd"><span class="sec-num">02</span><span class="sec-ttl">Global Cues & US Market News</span><span class="sec-badge b-news">International</span></div><div id="s02"></div></div>
+  <div class="section"><div class="sec-hd"><span class="sec-num">03</span><span class="sec-ttl">Indian Market News, Deals & Key Events</span><span class="sec-badge b-india">India Focus</span></div><div id="s03"></div></div>
+  <div class="section"><div class="sec-hd"><span class="sec-num">04</span><span class="sec-ttl">Top Headlines</span><span class="sec-badge b-news">ET · MC · CNBC · WSJ · Mint</span></div><div id="s04"></div></div>
+  <div class="section"><div class="sec-hd"><span class="sec-num">05</span><span class="sec-ttl">Trending Topics & Viral Content Ideas</span><span class="sec-badge b-news">Social Intel</span></div><div id="s05"></div></div>
+  <div class="section"><div class="sec-hd"><span class="sec-num">06</span><span class="sec-ttl">Market Voices & Newsmakers</span><span class="sec-badge b-voice">Expert Quotes</span></div><div id="s06"></div></div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-note">Broadview Morning Brief · The InvView · Powered by Gemini + Google Search · Not investment advice</span>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span class="change-key" onclick="changeKey()">Change API Key</span>
+      <button class="btn btn-gold btn-sm" id="exportBtn2" disabled onclick="exportWord()">↓ Export DOCX</button>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── GLOBALS ──
+let API_KEY = '';
+let briefData = {};
+let done = false;
+
+const TODAY = new Date();
+const DATE_STR = TODAY.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const TIME_STR = TODAY.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dateline').textContent = DATE_STR + ' · ' + TIME_STR;
+  const saved = localStorage.getItem('broadview_gemini_key');
+  if (saved) {
+    API_KEY = saved;
+    document.getElementById('apiScreen').style.display = 'none';
+    runBrief();
+  }
+  ['s01','s02','s03','s04','s05','s06'].forEach(id => {
+    document.getElementById(id).innerHTML = skel();
+  });
+});
+
+function startWithKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || !key.startsWith('AIza')) {
+    document.getElementById('apiError').style.display = 'block';
+    return;
+  }
+  API_KEY = key;
+  if (document.getElementById('rememberKey').checked) {
+    localStorage.setItem('broadview_gemini_key', key);
+  }
+  document.getElementById('apiScreen').style.display = 'none';
+  runBrief();
+}
+
+function changeKey() {
+  localStorage.removeItem('broadview_gemini_key');
+  location.reload();
+}
+
+// ── GEMINI API CALL ──
+async function callGemini(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 4000 }
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    if (res.status === 400 || res.status === 403) {
+      localStorage.removeItem('broadview_gemini_key');
+      throw new Error('Invalid API key. Please reload and enter a valid key.');
+    }
+    throw new Error(err.error?.message || 'API error ' + res.status);
+  }
+  const data = await res.json();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return extractJSON(raw);
+}
+
+function extractJSON(raw) {
+  let s = raw.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fence) s = fence[1].trim();
+  const start = s.indexOf('{'), end = s.lastIndexOf('}');
+  if (start >= 0 && end > start) s = s.slice(start, end + 1);
+  try { return JSON.parse(s); }
+  catch {
+    s = s.replace(/,\s*}/g,'}').replace(/,\s*]/g,']');
+    return JSON.parse(s);
+  }
+}
+
+// ── PROMPTS ──
+function pMarket()   { return `Today is ${DATE_STR}. Search Google for the latest prices for all markets. Return ONLY valid JSON no markdown:\n{"us_markets":[{"name":"Dow Jones","last_close":"","change":"","change_pct":""},{"name":"S&P 500","last_close":"","change":"","change_pct":""},{"name":"NASDAQ","last_close":"","change":"","change_pct":""}],"india_markets":[{"name":"Nifty 50","last_close":"","change":"","change_pct":""},{"name":"Sensex","last_close":"","change":"","change_pct":""},{"name":"Bank Nifty","last_close":"","change":"","change_pct":""},{"name":"Nifty Midcap 100","last_close":"","change":"","change_pct":""},{"name":"Nifty Smallcap 100","last_close":"","change":"","change_pct":""}],"asia_markets":[{"name":"Nikkei 225","last_close":"","change":"","change_pct":""},{"name":"Hang Seng","last_close":"","change":"","change_pct":""},{"name":"CSI 300","last_close":"","change":"","change_pct":""},{"name":"Kospi","last_close":"","change":"","change_pct":""},{"name":"ASX 200","last_close":"","change":"","change_pct":""}],"commodities_fx":[{"name":"Gold MCX (Rs/10g)","last_close":"","change":"","change_pct":""},{"name":"Silver MCX (Rs/kg)","last_close":"","change":"","change_pct":""},{"name":"Brent Crude (USD)","last_close":"","change":"","change_pct":""},{"name":"WTI Crude (USD)","last_close":"","change":"","change_pct":""},{"name":"USD/INR","last_close":"","change":"","change_pct":""}],"fii_flow":"","dii_flow":"","india_vix":""}  Fill ALL fields with real searched data.`; }
+
+function pGlobalNews() { return `Today is ${DATE_STR}. Search for the latest global and US financial news from last 24 hours. Return ONLY valid JSON:\n{"global_cues":["Real headline with company name and numbers","Story 2","Story 3","Story 4","Story 5"],"us_news":["Real US story with ticker and price move","Story 2","Story 3","Story 4","Story 5"]}  Real stories only, specific names and numbers.`; }
+
+function pIndia() { return `Today is ${DATE_STR}. Search for latest Indian stock market news and deals. Return ONLY valid JSON:\n{"india_news":["Real India story with company and INR amount","Story 2","Story 3","Story 4","Story 5"],"deals":[{"type":"IPO","headline":"Real IPO with company name and issue size"},{"type":"M&A","headline":"Real deal"},{"type":"QIP","headline":"Real QIP"},{"type":"Block Deal","headline":"Real block deal"},{"type":"Result","headline":"Real quarterly result"},{"type":"IPO","headline":""},{"type":"Block Deal","headline":""},{"type":"M&A","headline":""},{"type":"Result","headline":""},{"type":"QIP","headline":""}],"key_events":["Event with date and context","Event 2","Event 3","Event 4","Event 5"]}  Use INR values. Search for real recent deals.`; }
+
+function pHeadlines() { return `Today is ${DATE_STR}. Search each outlet for real articles published today or yesterday. Return ONLY valid JSON:\n{"economic_times":["Real ET headline 1","Headline 2","Headline 3"],"moneycontrol":["Real MC headline 1","Headline 2","Headline 3"],"cnbc":["Real CNBC TV18 headline 1","Headline 2","Headline 3"],"wsj":["Real WSJ headline 1","Headline 2","Headline 3"],"livemint":["Real Livemint headline 1","Headline 2","Headline 3"]}  No repetition across outlets. Specific company names in every headline.`; }
+
+function pTrends() { return `Today is ${DATE_STR}. Search Google Trends and social media for trending finance topics today. Return ONLY valid JSON:\n{"global_trends":[{"tag":"#Tag","context":"Why trending globally today"},{"tag":"#Tag2","context":""},{"tag":"#Tag3","context":""},{"tag":"#Tag4","context":""},{"tag":"#Tag5","context":""}],"india_trends":[{"tag":"#Tag","context":"Why trending in India today"},{"tag":"#Tag2","context":""},{"tag":"#Tag3","context":""},{"tag":"#Tag4","context":""},{"tag":"#Tag5","context":""}],"content_ideas":[{"title":"Specific video title tied to today news","platform":"YouTube","angle":"Why high views for Indian investors"},{"title":"","platform":"Instagram Reel","angle":""},{"title":"","platform":"YouTube","angle":""},{"title":"","platform":"Instagram","angle":""},{"title":"","platform":"YouTube Short","angle":""}]}`; }
+
+function pVoices() { return `Today is ${DATE_STR}. Search for recent quotes or interviews from fund managers, analysts, RBI/SEBI officials published today or yesterday. Return ONLY valid JSON with 5-6 voices:\n{"market_voices":[{"name":"Full Name","role":"Title","firm":"Organisation","source":"Where published","quote":"Their specific quote with market view","why_matters":"Why this matters to Indian retail investors"}]}`; }
+
+// ── HELPERS ──
+function skel() { return `<div class="skel-wrap"><div class="sk sk-f"></div><div class="sk sk-l"></div><div class="sk sk-m"></div><div class="sk sk-f"></div><div class="sk sk-s"></div><div class="sk sk-l"></div></div>`; }
+function errHtml(msg) { return `<div class="err-msg">⚠ ${msg} &nbsp;·&nbsp; <a href="#" onclick="runBrief();return false;" style="color:var(--gold)">Retry</a></div>`; }
+function setStatus(msg) { document.getElementById('genStatus').textContent = msg; }
+function setProgress(p) { document.getElementById('progress').style.width = p + '%'; }
+function dotState(s) { document.getElementById('liveDot').className = 'dot ' + s; }
+function chgCls(v) { if(!v) return 'neu'; const n=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); if(isNaN(n)) return 'neu'; return n>0?'pos':n<0?'neg':'neu'; }
+
+// ── RENDERERS ──
+function renderMarket(d) {
+  const groups=[['US Markets','us_markets'],['Indian Markets','india_markets'],['Asian Markets','asia_markets'],['Commodities & FX','commodities_fx']];
+  let h='<div class="sec-body"><div class="mkt-cols">';
+  [[groups[0]],[groups[1]],[groups[2],groups[3]]].forEach(cols=>{
+    h+='<div>';
+    cols.forEach(([label,key])=>{
+      const arr=d[key]||[];
+      h+=`<div class="mkt-group"><div class="mkt-lbl">${label}</div><table class="mkt-tbl"><thead><tr><th>Asset</th><th style="text-align:right">Close</th><th style="text-align:right">Chg%</th></tr></thead><tbody>`;
+      arr.forEach(r=>{const pct=r.change_pct||r.change||'';const cls=chgCls(pct);h+=`<tr><td class="an">${r.name||''}</td><td class="av">${r.last_close||'—'}</td><td class="${cls}">${pct||'—'}</td></tr>`;});
+      h+='</tbody></table></div>';
+    });
+    h+='</div>';
+  });
+  h+='</div><hr class="divider"><div class="flow-row">';
+  if(d.fii_flow) h+=`<div class="flow-card"><div class="flow-lbl">FII / FPI Flows</div><div class="flow-val">${d.fii_flow}</div></div>`;
+  if(d.dii_flow) h+=`<div class="flow-card"><div class="flow-lbl">DII Flows</div><div class="flow-val">${d.dii_flow}</div></div>`;
+  if(d.india_vix) h+=`<div class="vix-card"><div class="vix-lbl">India VIX</div><div class="vix-val">${d.india_vix}</div></div>`;
+  return h+'</div></div>';
+}
+
+function renderGlobalNews(d) {
+  const gc=d.global_cues||[],us=d.us_news||[];
+  let h='<div class="sec-body"><div class="two-col"><div><div class="col-lbl">Global Cues</div>';
+  gc.forEach((t,i)=>{h+=`<div class="hl"><span class="hl-n">${String(i+1).padStart(2,'0')}</span><span class="hl-t">${t}</span></div>`;});
+  h+='</div><div><div class="col-lbl">US Market News</div>';
+  us.forEach((t,i)=>{h+=`<div class="hl"><span class="hl-n">${String(i+1).padStart(2,'0')}</span><span class="hl-t">${t}</span></div>`;});
+  return h+'</div></div></div>';
+}
+
+function renderIndia(d) {
+  const news=d.india_news||[],deals=d.deals||[],events=d.key_events||[];
+  const dtCls=t=>{if(!t)return'd-other';const tl=t.toLowerCase();if(tl.includes('ipo'))return'd-ipo';if(tl.includes('m&a')||tl.includes('acqui'))return'd-ma';if(tl.includes('qip'))return'd-qip';if(tl.includes('block'))return'd-block';if(tl.includes('result'))return'd-result';return'd-other';};
+  let h='<div class="sec-body"><div class="two-col"><div><div class="sub-lbl">India Market News</div>';
+  news.forEach((t,i)=>{h+=`<div class="hl"><span class="hl-n">${String(i+1).padStart(2,'0')}</span><span class="hl-t">${t}</span></div>`;});
+  h+='</div><div><div class="sub-lbl">Key Events This Week</div>';
+  events.forEach(e=>{h+=`<div class="ev-item"><div class="ev-dot"></div><div class="ev-txt">${e}</div></div>`;});
+  h+='</div></div><hr class="divider"><div class="sub-lbl">Major Deals, IPOs, QIPs & Block Deals</div><div class="deals-grid">';
+  deals.forEach(deal=>{const type=typeof deal==='object'?(deal.type||'Deal'):'Deal';const text=typeof deal==='object'?(deal.headline||deal.text||''):deal;if(!text)return;h+=`<div class="deal-card"><span class="dtype ${dtCls(type)}">${type}</span><div class="deal-txt">${text}</div></div>`;});
+  return h+'</div></div>';
+}
+
+function renderHeadlines(d) {
+  const outlets=[['economic_times','Economic Times'],['moneycontrol','Moneycontrol'],['cnbc','CNBC TV18'],['wsj','Wall St. Journal'],['livemint','Livemint']];
+  let h='<div class="sec-body"><div class="outlets-grid">';
+  outlets.forEach(([k,l])=>{
+    const arr=d[k]||[];
+    h+=`<div class="outlet-card"><div class="outlet-name">${l}</div>`;
+    arr.slice(0,3).forEach(item=>{const t=typeof item==='object'?(item.headline||item.title||''):item;h+=`<div class="outlet-hl">${t}</div>`;});
+    h+='</div>';
+  });
+  return h+'</div></div>';
+}
+
+function renderTrends(d) {
+  const gt=d.global_trends||[],it=d.india_trends||[],ideas=d.content_ideas||[];
+  let h='<div class="sec-body"><div class="two-col"><div><div class="col-lbl">Global Trending</div>';
+  gt.forEach(t=>{const tag=typeof t==='object'?(t.tag||''):t;const ctx=typeof t==='object'?(t.context||''):'';h+=`<div class="trend-row"><span class="trend-tag">${tag}</span><span class="trend-ctx">${ctx}</span></div>`;});
+  h+='</div><div><div class="col-lbl">India Trending</div>';
+  it.forEach(t=>{const tag=typeof t==='object'?(t.tag||''):t;const ctx=typeof t==='object'?(t.context||''):'';h+=`<div class="trend-row"><span class="trend-tag">${tag}</span><span class="trend-ctx">${ctx}</span></div>`;});
+  h+='</div></div><hr class="divider"><div class="sub-lbl">Viral Content Ideas for The Broadview</div><div class="ideas-grid">';
+  ideas.forEach(i=>{const title=typeof i==='object'?(i.title||''):i;const plat=typeof i==='object'?(i.platform||'YouTube'):'YouTube';const angle=typeof i==='object'?(i.angle||''):'';h+=`<div class="idea-card"><div class="idea-plat">${plat}</div><div class="idea-ttl">${title}</div><div class="idea-angle">${angle}</div></div>`;});
+  return h+'</div></div>';
+}
+
+function renderVoices(d) {
+  const voices=d.market_voices||d.voices||[];
+  let h='<div class="sec-body"><div class="voices-grid">';
+  voices.forEach(v=>{
+    const init=(v.name||'??').split(' ').slice(0,2).map(x=>x[0]||'').join('');
+    h+=`<div class="voice-card"><div class="voice-hd"><div class="voice-av">${init}</div><div><div class="v-name">${v.name||''}</div><div class="v-role">${v.role||''}${v.firm?' · '+v.firm:''}</div><div class="v-src">${v.source||''}</div></div></div><div class="v-quote">"${v.quote||''}"</div>${(v.why_matters||v.why)?`<div class="v-why"><span class="why-lbl">Why it matters</span>${v.why_matters||v.why}</div>`:''}</div>`;
+  });
+  return h+'</div></div>';
+}
+
+// ── FETCH SECTION ──
+async function fetchSection(prompt, sectionId, renderFn, label) {
+  try {
+    const data = await callGemini(prompt);
+    document.getElementById(sectionId).innerHTML = renderFn(data);
+    return data;
+  } catch(e) {
+    document.getElementById(sectionId).innerHTML = errHtml(label + ': ' + e.message);
+    return null;
+  }
+}
+
+// ── MAIN RUN ──
+async function runBrief() {
+  done = false;
+  briefData = {};
+  ['s01','s02','s03','s04','s05','s06'].forEach(id=>{ document.getElementById(id).innerHTML=skel(); });
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('exportBtn2').disabled = true;
+  dotState('busy');
+  setProgress(0);
+
+  const steps = [
+    [pMarket,    's01', renderMarket,      'Market Snapshot', 16],
+    [pGlobalNews,'s02', renderGlobalNews,  'Global News',     32],
+    [pIndia,     's03', renderIndia,       'India Markets',   50],
+    [pHeadlines, 's04', renderHeadlines,   'Headlines',       66],
+    [pTrends,    's05', renderTrends,      'Trends',          82],
+    [pVoices,    's06', renderVoices,      'Market Voices',  100],
+  ];
+
+  for (const [promptFn, sid, fn, label, pct] of steps) {
+    setStatus('Fetching ' + label + '...');
+    const data = await fetchSection(promptFn(), sid, fn, label);
+    if (data) briefData[sid] = data;
+    setProgress(pct);
+  }
+
+  const now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+  document.getElementById('lastGen').textContent = now;
+  setStatus('Brief complete — all 6 sections loaded');
+  dotState('live');
+  document.getElementById('exportBtn').disabled = false;
+  document.getElementById('exportBtn2').disabled = false;
+  done = true;
+}
+
+// ── EXPORT ──
+function exportWord() {
+  if (!done) { alert('Wait for brief to finish.'); return; }
+  const m=briefData.s01||{},n=briefData.s02||{},ind=briefData.s03||{},hl=briefData.s04||{},tr=briefData.s05||{},vo=briefData.s06||{};
+  let html=`<html><head><meta charset="UTF-8"><style>body{font-family:Calibri,sans-serif;font-size:11pt;color:#111;margin:40px}h1{font-family:Georgia,serif;font-size:24pt;border-bottom:3px solid #c9a84c;padding-bottom:8px}h2{font-family:Georgia,serif;font-size:14pt;background:#f5f0e0;padding:5px 10px;margin-top:20px;border-left:4px solid #c9a84c}h3{font-size:12pt;margin-top:14px;border-bottom:1px solid #ddd;padding-bottom:3px}table{border-collapse:collapse;width:100%;margin:8px 0}th{background:#1a2535;color:#c9a84c;padding:5px 10px;font-size:9pt}td{padding:5px 10px;font-size:10pt;border-bottom:1px solid #eee}.pos{color:#065f46;font-weight:bold}.neg{color:#7f1d1d;font-weight:bold}.badge{background:#e0eeff;color:#1155cc;padding:1px 6px;border-radius:3px;font-size:8pt;font-weight:bold}.quote{font-style:italic;border-left:3px solid #c9a84c;padding-left:12px;color:#333;margin:8px 0}.why{background:#f5f5f5;padding:6px 10px;font-size:9pt;color:#555}ol{padding-left:20px}ol li{margin:5px 0}</style></head><body>`;
+  html+=`<h1>Broadview Morning Brief</h1><p style="color:#888;font-size:9pt">${DATE_STR} · The InvView · Gemini + Google Search · Not investment advice</p>`;
+  html+=`<h2>01 — MARKET SNAPSHOT</h2>`;
+  [['US Markets','us_markets'],['Indian Markets','india_markets'],['Asian Markets','asia_markets'],['Commodities & FX','commodities_fx']].forEach(([l,k])=>{const arr=m[k]||[];if(!arr.length)return;html+=`<h3>${l}</h3><table><tr><th>Asset</th><th>Last Close</th><th>Change %</th></tr>`;arr.forEach(r=>{const pct=r.change_pct||r.change||'—';const n=parseFloat(String(pct).replace(/[^0-9.\-]/g,''));html+=`<tr><td>${r.name||''}</td><td>${r.last_close||'—'}</td><td class="${n>0?'pos':n<0?'neg':''}">${pct}</td></tr>`;});html+=`</table>`;});
+  html+=`<p><b>FII:</b> ${m.fii_flow||'—'} &nbsp; <b>DII:</b> ${m.dii_flow||'—'} &nbsp; <b>VIX:</b> ${m.india_vix||'—'}</p>`;
+  html+=`<h2>02 — GLOBAL CUES & US NEWS</h2><h3>Global Cues</h3><ol>`;(n.global_cues||[]).forEach(x=>{html+=`<li>${x}</li>`;});html+=`</ol><h3>US Market News</h3><ol>`;(n.us_news||[]).forEach(x=>{html+=`<li>${x}</li>`;});html+=`</ol>`;
+  html+=`<h2>03 — INDIAN MARKET NEWS & DEALS</h2><h3>India News</h3><ol>`;(ind.india_news||[]).forEach(x=>{html+=`<li>${x}</li>`;});html+=`</ol><h3>Deals</h3>`;(ind.deals||[]).forEach(d=>{const t=typeof d==='object'?(d.type||''):' ';const tx=typeof d==='object'?(d.headline||''):d;if(!tx)return;html+=`<p><span class="badge">${t}</span> ${tx}</p>`;});html+=`<h3>Key Events</h3><ol>`;(ind.key_events||[]).forEach(x=>{html+=`<li>${x}</li>`;});html+=`</ol>`;
+  html+=`<h2>04 — TOP HEADLINES</h2>`;[['economic_times','Economic Times'],['moneycontrol','Moneycontrol'],['cnbc','CNBC TV18'],['wsj','WSJ'],['livemint','Livemint']].forEach(([k,l])=>{html+=`<h3>${l}</h3><ol>`;(hl[k]||[]).slice(0,3).forEach(x=>{const t=typeof x==='object'?(x.headline||x.title||''):x;html+=`<li>${t}</li>`;});html+=`</ol>`;});
+  html+=`<h2>05 — TRENDING & CONTENT IDEAS</h2><h3>Global Trending</h3><table><tr><th>Tag</th><th>Context</th></tr>`;(tr.global_trends||[]).forEach(t=>{html+=`<tr><td><b>${typeof t==='object'?(t.tag||''):t}</b></td><td>${typeof t==='object'?(t.context||''):''}</td></tr>`;});html+=`</table><h3>India Trending</h3><table><tr><th>Tag</th><th>Context</th></tr>`;(tr.india_trends||[]).forEach(t=>{html+=`<tr><td><b>${typeof t==='object'?(t.tag||''):t}</b></td><td>${typeof t==='object'?(t.context||''):''}</td></tr>`;});html+=`</table><h3>Content Ideas</h3>`;(tr.content_ideas||[]).forEach((i,idx)=>{const title=typeof i==='object'?(i.title||''):i;const plat=typeof i==='object'?(i.platform||''):'';const angle=typeof i==='object'?(i.angle||''):'';html+=`<p><b>${idx+1}. ${title}</b> <span class="badge">${plat}</span><br><span style="font-size:9.5pt;color:#555">${angle}</span></p>`;});
+  html+=`<h2>06 — MARKET VOICES</h2>`;(vo.market_voices||vo.voices||[]).forEach(v=>{html+=`<p><b>${v.name||''}</b> — ${v.role||''}${v.firm?', '+v.firm:''}</p><div class="quote">"${v.quote||''}"</div>${(v.why_matters||v.why)?`<div class="why"><b>Why it matters:</b> ${v.why_matters||v.why}</div>`:''}<br>`;});
+  html+=`<hr><p style="color:#aaa;font-size:8pt;text-align:center">Broadview Morning Brief · ${DATE_STR} · Not investment advice</p></body></html>`;
+  const blob=new Blob([html],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`Broadview_Brief_${new Date().toISOString().slice(0,10)}.doc`;a.click();URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
